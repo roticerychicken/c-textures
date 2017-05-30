@@ -22,12 +22,21 @@ int width  = 0;
 int height = 0;
 short BitsPerPixel = 0;
 
-GLuint loadTGA(char *filename, int w, int h) {
-
+GLuint loadTGA(char *filename) {
+	short w = 0;
+	short h = 0;
 	GLuint texture;
-	int *data = malloc((w*h*4)*sizeof(int));
-
+	
+	
 	FILE *file = fopen(filename, "rb");
+	for(int i = 0; i < 12; i++) {
+		fgetc(file);
+	}
+	fread(&w,1,2,file);
+	fread(&h,1,2,file);
+	
+	int *data = malloc((w*h*4)*sizeof(int));
+	
 	fseek(file, 18, SEEK_SET);
 	fread(data, w*h*4, 1, file);
 	fclose(file);
@@ -63,7 +72,7 @@ void DrawAQuad() {
  glLoadIdentity();
  gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
    
- GLuint text = loadTGA("textr3.tga", 640, 480);
+ GLuint text = loadTGA("textr3.tga");
  glBindTexture(GL_TEXTURE_2D, text);
  glBegin(GL_QUADS);
   glTexCoord2f(0.0, 0.0); glVertex3f(-.75, -.75, 0.);
@@ -74,6 +83,16 @@ void DrawAQuad() {
 } 
  
 int main(int argc, char *argv[]) {
+	short b,h;
+ FILE *f = fopen("textr3.tga","rb");
+ for(int i = 0; i < 12; i++){
+	fgetc(f);
+ }
+ fread(&b,1,2,f); 
+printf("%d\n",b);
+ fread(&h,1,2,f);
+printf("%d",h);
+
 
  dpy = XOpenDisplay(NULL);
  
