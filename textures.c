@@ -20,13 +20,16 @@ XEvent                  xev;
 
 int width  = 0;
 int height = 0;
+float size = .3;
 short BitsPerPixel = 0;
-
+float DT;
+GLfloat rotation_matrix[16];
+float                   rot_z_vel = 50.0, rot_y_vel = 30.0;
+///
 GLuint loadTGA(char *filename) {
 	short w = 0;
 	short h = 0;
 	GLuint texture;
-	
 	
 	FILE *file = fopen(filename, "rb");
 	for(int i = 0; i < 12; i++) {
@@ -59,7 +62,13 @@ GLuint loadTGA(char *filename) {
 
 	return texture;
 }
-
+void RotateCube() {
+ glMatrixMode(GL_MODELVIEW);
+ glLoadIdentity();
+ glRotatef(rot_y_vel*DT,0.0,1.0,0.0);
+ glMultMatrixf(rotation_matrix);
+ glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
+}
 void DrawAQuad() {
  glClearColor(0, 0, 0, 0);
  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -72,26 +81,60 @@ void DrawAQuad() {
  glLoadIdentity();
  gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
    
- GLuint text = loadTGA("textr3.tga");
+ GLuint text = loadTGA("minecraft1.tga");
+ GLuint text1 = loadTGA("grasstop.tga");
+ glRotatef(20.0, 1.0, 1.0, 0.0);
+
  glBindTexture(GL_TEXTURE_2D, text);
- glBegin(GL_QUADS);
-  glTexCoord2f(0.0, 0.0); glVertex3f(-.75, -.75, 0.);
-  glTexCoord2f(1.0, 0.0);  glVertex3f( .75, -.75, 0.);
-  glTexCoord2f(1.0, 1.0); glVertex3f( .75,  .75, 0.);
-  glTexCoord2f(0.0, 1.0); glVertex3f(-.75,  .75, 0.);
+ glBegin(GL_QUADS); 
+  glTexCoord2f(0.0, 0.0); glVertex3f(-size, -size, -size);
+  glTexCoord2f(1.0, 0.0); glVertex3f( size, -size, -size);
+  glTexCoord2f(1.0, 1.0); glVertex3f( size,  size, -size);
+  glTexCoord2f(0.0, 1.0); glVertex3f(-size,  size, -size);
+
+  glTexCoord2f(0.0, 0.0); glVertex3f(-size, -size, size);
+  glTexCoord2f(1.0, 0.0); glVertex3f( size, -size, size);
+  glTexCoord2f(1.0, 1.0); glVertex3f( size,  size, size);
+  glTexCoord2f(0.0, 1.0); glVertex3f(-size,  size, size);
  glEnd();
+
+ glBegin(GL_QUADS);
+  glTexCoord2f(0.0, 0.0); glVertex3f(-size, -size, -size);
+  glTexCoord2f(1.0, 0.0); glVertex3f(-size, -size, size);
+  glTexCoord2f(1.0, 1.0); glVertex3f(-size,  size, size);
+  glTexCoord2f(0.0, 1.0); glVertex3f(-size,  size, -size);
+
+  glTexCoord2f(0.0, 0.0); glVertex3f(size, -size, -size);
+  glTexCoord2f(1.0, 0.0); glVertex3f(size, -size, size);
+  glTexCoord2f(1.0, 1.0); glVertex3f(size,  size, size);
+  glTexCoord2f(0.0, 1.0); glVertex3f(size,  size, -size);
+ glEnd();
+   
+ glBindTexture(GL_TEXTURE_2D, text1);
+ glBegin(GL_QUADS);
+  glTexCoord2f(0.0, 0.0); glVertex3f(-size, -size, -size);
+  glTexCoord2f(1.0, 0.0); glVertex3f(-size, -size, size);
+  glTexCoord2f(1.0, 1.0); glVertex3f( size, -size, size);
+  glTexCoord2f(0.0, 1.0); glVertex3f( size, -size, -size);
+
+  glTexCoord2f(0.0, 0.0); glVertex3f(-size,  size, -size);
+  glTexCoord2f(1.0, 0.0); glVertex3f(-size,  size,  size);
+  glTexCoord2f(1.0, 1.0); glVertex3f( size,  size,  size);
+  glTexCoord2f(0.0, 1.0); glVertex3f( size,  size, -size);
+ glEnd();
+
 } 
- 
+
 int main(int argc, char *argv[]) {
 	short b,h;
- FILE *f = fopen("textr3.tga","rb");
+ FILE *f = fopen("minecraft.tga","rb");
  for(int i = 0; i < 12; i++){
 	fgetc(f);
  }
  fread(&b,1,2,f); 
-printf("%d\n",b);
+ printf("%d\n",b);
  fread(&h,1,2,f);
-printf("%d",h);
+ printf("%d",h);
 
 
  dpy = XOpenDisplay(NULL);
@@ -125,8 +168,8 @@ printf("%d",h);
  XStoreName(dpy, win, "Window");
  
  glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+
  glXMakeCurrent(dpy, win, glc);
- 
  glEnable(GL_DEPTH_TEST); 
 
  while(1) {
@@ -136,6 +179,7 @@ printf("%d",h);
                 XGetWindowAttributes(dpy, win, &gwa);
                 glViewport(0, 0, gwa.width, gwa.height); 
                 DrawAQuad(); 
+		RotateCube();
                 glXSwapBuffers(dpy, win);
         }
                 
