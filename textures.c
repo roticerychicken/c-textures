@@ -1,9 +1,14 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include<X11/X.h>
+#include<string.h>
+#include<unistd.h>
+#include<math.h>
+#include<time.h>
+#include<sys/time.h>
 #include<X11/Xlib.h>
-#include<GL/gl.h>
+#include<X11/XKBlib.h>
 #include<GL/glx.h>
+#include<GL/glext.h>
 #include<GL/glu.h>
 
 Display                 *dpy;
@@ -22,7 +27,10 @@ int width  = 0;
 int height = 0;
 float size = .3;
 short BitsPerPixel = 0;
-float DT;
+int                     Frame = 1, FramesPerFPS;
+float 			TimeCounter, LastFrameTimeCounter,DT,prevTime=0.0,FPS;
+struct timeval 		tv,tv0;
+
 GLfloat rotation_matrix[16];
 float                   rot_z_vel = 50.0, rot_y_vel = 30.0;
 ///
@@ -62,31 +70,12 @@ GLuint loadTGA(char *filename) {
 
 	return texture;
 }
-void expose() {
- float aspect_ratio;
- 
- XGetWindowAttributes(dpy,win,&gwa);
- glViewport(0,0,gwa.width,gwa.height);
- aspect_ratio = (float)(gwa.width)/(float)(gwa.height);
 
- glClearColor(0, 0, 0, 0);
- glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
- 
- glMatrixMode(GL_PROJECTION);
- glLoadIdentity();
- glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
-
- glEnable(GL_TEXTURE_2D);
- glMatrixMode(GL_MODELVIEW);
- glLoadIdentity();
- gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-   
-}
 void DrawAQuad() {
  
  GLuint text = loadTGA("minecraft1.tga");
  GLuint text1 = loadTGA("grasstop.tga");
- glRotatef(20.0, 1.0, 1.0, 0.0);
+ 
 
  glBindTexture(GL_TEXTURE_2D, text);
  glBegin(GL_QUADS);
@@ -128,6 +117,59 @@ void DrawAQuad() {
  glEnd();
 
 } 
+void InitTimeCounter() {
+ gettimeofday(&tv0, NULL);
+ FramesPerFPS = 30; }
+
+void UpdateTimeCounter() {
+ LastFrameTimeCounter = TimeCounter;
+ gettimeofday(&tv, NULL);
+ TimeCounter = (float)(tv.tv_sec-tv0.tv_sec) + 0.000001*((float)(tv.tv_usec-tv0.tv_usec));
+ DT = TimeCounter - LastFrameTimeCounter;
+}
+
+void CalculateFPS() {
+ Frame ++;
+
+   if((Frame%FramesPerFPS) == 0) {
+        FPS = ((float)(FramesPerFPS)) / (TimeCounter-prevTime);
+        prevTime = TimeCounter;
+   }
+}
+void RotateCube() {
+ glMatrixMode(GL_MODELVIEW);
+ glLoadIdentity();
+ glRotatef(rot_y_vel*DT,0.0,1.0,0.0);
+ glRotatef(rot_z_vel*DT,0.0,0.0,1.0);
+ glMultMatrixf(rotation_matrix);
+ glGetFloatv(GL_MODELVIEW_MATRIX, rotation_matrix);
+}
+void expose() {
+ float aspect_ratio;
+ 
+ XGetWindowAttributes(dpy,win,&gwa);
+ glViewport(0,0,gwa.width,gwa.height);
+ aspect_ratio = (float)(gwa.width)/(float)(gwa.height);
+
+
+
+ 
+ glMatrixMode(GL_PROJECTION);
+ glLoadIdentity();
+ glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
+
+ glEnable(GL_TEXTURE_2D);
+ glMatrixMode(GL_MODELVIEW);
+ glLoadIdentity();
+ gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
+ glMultMatrixf(rotation_matrix);  
+
+
+ glClearColor(0, 0, 0, 0);
+ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+ DrawAQuad();
+ glXSwapBuffers(dpy, win);
+}
 
 int main(int argc, char *argv[]) {
 	short b,h;
@@ -176,23 +218,18 @@ int main(int argc, char *argv[]) {
  glXMakeCurrent(dpy, win, glc);
  glEnable(GL_DEPTH_TEST); 
 
+ glMatrixMode(GL_MODELVIEW);
+ glLoadIdentity();
+ glGetFloatv(GL_MODELVIEW_MATRIX, rotation_matrix);
+
+ InitTimeCounter();
  while(1) {
-        XNextEvent(dpy, &xev);
-        
-        //if(xev.type == Expose) {
-                
+
+  
+        UpdateTimeCounter();
+	CalculateFPS();
+        RotateCube();
 	expose();
-        DrawAQuad(); 
-        glXSwapBuffers(dpy, win);
-        //}
-                
-        if(xev.type == KeyPress) {
-                glXMakeCurrent(dpy, None, NULL);
-                glXDestroyContext(dpy, glc);
-                XDestroyWindow(dpy, win);
-                XCloseDisplay(dpy);
-                exit(0);
-        }
     } /* this closes while(1) { */
 } /* this is the } which closes int main(int argc, char *argv[]) { */
 
