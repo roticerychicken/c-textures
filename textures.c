@@ -17,7 +17,7 @@ GLXContext              glc;
 XWindowAttributes       gwa;
 XEvent                  xev;
 
-
+float num = 0;
 int width  = 0;
 int height = 0;
 float size = .3;
@@ -62,31 +62,35 @@ GLuint loadTGA(char *filename) {
 
 	return texture;
 }
-void RotateCube() {
- glMatrixMode(GL_MODELVIEW);
- glLoadIdentity();
- glRotatef(rot_y_vel*DT,0.0,1.0,0.0);
- glMultMatrixf(rotation_matrix);
- glGetFloatv(GL_MODELVIEW_MATRIX,rotation_matrix);
-}
-void DrawAQuad() {
+void expose() {
+ float aspect_ratio;
+ 
+ XGetWindowAttributes(dpy,win,&gwa);
+ glViewport(0,0,gwa.width,gwa.height);
+ aspect_ratio = (float)(gwa.width)/(float)(gwa.height);
+
  glClearColor(0, 0, 0, 0);
  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+ 
  glMatrixMode(GL_PROJECTION);
  glLoadIdentity();
- glOrtho(-1., 1., -1., 1., 1., 20.);
+ glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
+
  glEnable(GL_TEXTURE_2D);
  glMatrixMode(GL_MODELVIEW);
  glLoadIdentity();
  gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
    
+}
+void DrawAQuad() {
+ 
  GLuint text = loadTGA("minecraft1.tga");
  GLuint text1 = loadTGA("grasstop.tga");
  glRotatef(20.0, 1.0, 1.0, 0.0);
 
  glBindTexture(GL_TEXTURE_2D, text);
- glBegin(GL_QUADS); 
+ glBegin(GL_QUADS);
+  glTranslatef(num, 0, 0); 
   glTexCoord2f(0.0, 0.0); glVertex3f(-size, -size, -size);
   glTexCoord2f(1.0, 0.0); glVertex3f( size, -size, -size);
   glTexCoord2f(1.0, 1.0); glVertex3f( size,  size, -size);
@@ -175,15 +179,14 @@ int main(int argc, char *argv[]) {
  while(1) {
         XNextEvent(dpy, &xev);
         
-        if(xev.type == Expose) {
-                XGetWindowAttributes(dpy, win, &gwa);
-                glViewport(0, 0, gwa.width, gwa.height); 
-                DrawAQuad(); 
-		RotateCube();
-                glXSwapBuffers(dpy, win);
-        }
+        //if(xev.type == Expose) {
                 
-        else if(xev.type == KeyPress) {
+	expose();
+        DrawAQuad(); 
+        glXSwapBuffers(dpy, win);
+        //}
+                
+        if(xev.type == KeyPress) {
                 glXMakeCurrent(dpy, None, NULL);
                 glXDestroyContext(dpy, glc);
                 XDestroyWindow(dpy, win);
