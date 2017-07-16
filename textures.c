@@ -1,3 +1,4 @@
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -30,7 +31,8 @@ float size = .3;
 short BitsPerPixel = 0;
 int start_t,end_t;
 float total_t;
-
+ GLuint text;
+GLuint text1;
 int t1,t2;
 #define BILLION  1000000000L;
 
@@ -86,11 +88,7 @@ GLuint loadTGA(char *filename) {
 }
 
 void DrawAQuad() {
- 
-	 GLuint text = loadTGA("minecraft1.tga");
-	 GLuint text1 = loadTGA("grasstop.tga");
-	 
-	 //glRotatef(num,num,num,0.0);
+	 glRotatef(num,num,num,0.0);
 
 	 glBindTexture(GL_TEXTURE_2D, text);
 	 glBegin(GL_QUADS);
@@ -130,7 +128,6 @@ void DrawAQuad() {
 	  glTexCoord2f(1.0, 1.0); glVertex3f( size,  size,  size);
 	  glTexCoord2f(0.0, 1.0); glVertex3f( size,  size, -size);
 	 glEnd();
-
 } 
 
 
@@ -142,8 +139,8 @@ void expose() {
 	 glViewport(0,0,gwa.width,gwa.height);
 	 aspect_ratio = (float)(gwa.width)/(float)(gwa.height);
  	  
-	// glEnable(GL_DEPTH_TEST);
- 	// glEnable(GL_TEXTURE_2D);
+	 glEnable(GL_DEPTH_TEST);
+ 	 glEnable(GL_TEXTURE_2D);
 
 	 glMatrixMode(GL_PROJECTION);
 	 glLoadIdentity();
@@ -164,28 +161,19 @@ void expose() {
 
 	glMatrixMode(GL_PROJECTION);
  	glLoadIdentity();
- 	glOrtho(0, (float)wa.width, 0, (float)wa.height, -1., 1.);
+ 	glOrtho(0, (float)gwa.width, 0, (float)gwa.height, -1., 1.);
 
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
 	 glXSwapBuffers(dpy, win);
-	// glFlush();
+	 glFlush();
 }
 
 
 
 int main(int argc, char *argv[]) {
-	 short b,h;
-	 FILE *f = fopen("minecraft.tga","rb");
-	 for(int i = 0; i < 12; i++){
-		fgetc(f);
-	 }
-	 fread(&b,1,2,f); 
-	 printf("%d\n",b);
-	 fread(&h,1,2,f);
-	 printf("%d",h);
 
-	 t1 = 0;
-	 t2 = 0;
 	
 	 dpy = XOpenDisplay(NULL);
 	 
@@ -244,6 +232,8 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
 	uint64_t old_time = ts.tv_nsec;
 
+	text = loadTGA("minecraft1.tga");
+	text1 = loadTGA("grasstop.tga");
 	//main loop
 	while(1){
 
@@ -296,9 +286,4 @@ int main(int argc, char *argv[]) {
 		}
 	}
 */
-
-
-
-
-
 
