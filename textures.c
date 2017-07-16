@@ -90,7 +90,7 @@ void DrawAQuad() {
 	 GLuint text = loadTGA("minecraft1.tga");
 	 GLuint text1 = loadTGA("grasstop.tga");
 	 
-	 glRotatef(num,num,num,0.0);
+	 //glRotatef(num,num,num,0.0);
 
 	 glBindTexture(GL_TEXTURE_2D, text);
 	 glBegin(GL_QUADS);
@@ -142,8 +142,9 @@ void expose() {
 	 glViewport(0,0,gwa.width,gwa.height);
 	 aspect_ratio = (float)(gwa.width)/(float)(gwa.height);
  	  
-	 glEnable(GL_DEPTH_TEST);
- 	 glEnable(GL_TEXTURE_2D);
+	// glEnable(GL_DEPTH_TEST);
+ 	// glEnable(GL_TEXTURE_2D);
+
 	 glMatrixMode(GL_PROJECTION);
 	 glLoadIdentity();
 	 glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
@@ -161,9 +162,13 @@ void expose() {
 	//DRAWS OBJECT
 	 DrawAQuad();
 
+	glMatrixMode(GL_PROJECTION);
+ 	glLoadIdentity();
+ 	glOrtho(0, (float)wa.width, 0, (float)wa.height, -1., 1.);
+
 
 	 glXSwapBuffers(dpy, win);
-	 glFlush();
+	// glFlush();
 }
 
 
@@ -228,32 +233,44 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);
 	 }
 	 
-	 long tstep = 0;
-	 long tavg = 0;
-	 while(1) {
-	
-	   	if(clock_gettime(CLOCK_MONOTONIC_RAW,&stop) == -1) {
-			perror("Exit");
-			exit(EXIT_FAILURE);
-	 	}
-		
+	 
+	uint64_t new_time = 0; 
+	float tstep = 0.0f; //frame time of the previous frame (current time of the new frame)
+	struct timespec ts = {0}; //needed to get nsecs out of the CPU
 
-		tstep += (stop.tv_nsec - start.tv_nsec);
-		printf( "%ld \n",tstep);
-		if(tstep >= 16670000) {		
-	 		expose();
-			//sleep(1);
-			tstep = 0;
-		} 
-			
-    	
-		if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&start) == -1) {
-			perror("Exit"); 
-			exit(EXIT_FAILURE);
+	const float desired_tstep = 1.0f / 60.0f; // frame time required for 60 fps
+
+	//get the old time out of the CPU, copy it to the integer for old time
+	clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+	uint64_t old_time = ts.tv_nsec;
+
+	//main loop
+	while(1){
+
+		//copy current time into the int	
+		clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+		uint64_t new_time = ts.tv_nsec;
+
+		//convert the diffrence of the old time and new time in int form into
+		//a float in seconds
+		float tmp_tstep = (new_time - old_time) /  1000000000.0f;;
+
+		//filter out bad timestamps
+		if(tmp_tstep < 1.0f){
+			tstep += tmp_tstep;
 		}
-	        
-	 }
+		printf("%f\n",tstep);
+		//now the old time is the new time as new_time is oudated
+		old_time = new_time;
+
+		//our actual "do stuff here" section:
+		if(tstep >= desired_tstep){
 		
+			//graphics code goes here!
+			expose();
+			tstep = 0;
+		}	
+}
 	 /* this closes while(1) { */
 } /* this is the } which closes int main(int argc, char *argv[]) { */
 
