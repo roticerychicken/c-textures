@@ -89,7 +89,7 @@ GLuint loadTGA(char *filename) {
 
 void DrawAQuad() {
 
-	 glRotatef(0,0,0,0.0);
+	 glRotatef(num,0,num,0.0);
 	 glTranslatef(x,y,0);
 
 	 glBindTexture(GL_TEXTURE_2D, text);
@@ -147,7 +147,7 @@ void expose() {
 	 glLoadIdentity();
 	 glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
 
-	// num+=1;
+	 num+=1;
 	 glMatrixMode(GL_MODELVIEW);
 	 glLoadIdentity();
 	 gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
@@ -171,15 +171,17 @@ void expose() {
 	 glFlush();
 }
 
+
+//just up and down for now to demonstrate 3d and movement without sloppyness
 void CheckKeyboard() {
 	if(XCheckWindowEvent(dpy,win,KeyPressMask,&xev)) {
 		char *key_string = XKeysymToString(XkbKeycodeToKeysym(dpy,xev.xkey.keycode,0,0));
 		if(strncmp(key_string, "Left", 4) == 0) {
-			x-=0.05;
+		/*	x-=0.05;
 			num--;
 		} else if(strncmp(key_string,"Right", 5) == 0) {
 			x+=0.05;
-			num++;
+			num++;*/
 		} else if(strncmp(key_string,"Up", 2) == 0) {
 			y+=0.05;
 		} else if(strncmp(key_string,"Down",4) == 0) {
