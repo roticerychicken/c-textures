@@ -37,9 +37,7 @@ int t1,t2;
 #define BILLION  1000000000L;
 
 GLfloat rotation_matrix[16];
-float                   rot_z_vel = 50.0, rot_y_vel = 30.0;
-
-struct timespec start,stop;
+float rot_z_vel = 50.0, rot_y_vel = 30.0;
 
 /*
 NOTES
@@ -216,51 +214,44 @@ int main(int argc, char *argv[]) {
 	 
 	 //so far he just got the frequency of each frame.	 
 	
-	 if(clock_gettime(CLOCK_MONOTONIC_RAW,&start) == -1) {
-			perror("Exit");
-			exit(EXIT_FAILURE);
-	 }
+	
 	 
-	 
-	uint64_t new_time = 0; 
-	float tstep = 0.0f; //frame time of the previous frame (current time of the new frame)
-	struct timespec ts = {0}; //needed to get nsecs out of the CPU
-
-	const float desired_tstep = 1.0f / 60.0f; // frame time required for 60 fps
-
-	//get the old time out of the CPU, copy it to the integer for old time
-	clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
-	uint64_t old_time = ts.tv_nsec;
-
 	text = loadTGA("minecraft1.tga");
 	text1 = loadTGA("grasstop.tga");
+
+
+	//query the time step initial
+	struct timespec ts;
+	//set a variable called old time and make that equal to the timestep
+	clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+	uint64_t oldTime = ts.tv_nsec;
+	//we are going to render a frame when 1/60 seconed has passed
+	const float desiredTime = 1.0f / 60.0f;
+	float tstep = 0;
+	float tmpstep = 0;
+	
 	//main loop
-	while(1){
-
-		//copy current time into the int	
+	
+	while(1) {
+		//set new time = new timestamp
 		clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
-		uint64_t new_time = ts.tv_nsec;
-
-		//convert the diffrence of the old time and new time in int form into
-		//a float in seconds
-		float tmp_tstep = (new_time - old_time) /  1000000000.0f;;
-
-		//filter out bad timestamps
-		if(tmp_tstep < 1.0f){
-			tstep += tmp_tstep;
+		uint64_t newtime = ts.tv_nsec;
+		//tmpstep = newtime-oldtime 
+		tmpstep = newtime-oldTime;
+		//tstep+=tmpstep as long as tmpstep is less then 1
+		if(tstep <= 1.0f) {
+			tstep += tmpstep;
 		}
-		printf("%f\n",tstep);
-		//now the old time is the new time as new_time is oudated
-		old_time = new_time;
-
-		//our actual "do stuff here" section:
-		if(tstep >= desired_tstep){
+		oldTime = newtime;
 		
-			//graphics code goes here!
+		//if tstep has exceeded a 1/60 seconds render cube set tstep=0
+		if(tstep >= desiredTime) {
 			expose();
 			tstep = 0;
-		}	
-}
+		}
+		
+		
+	}
 	 /* this closes while(1) { */
 } /* this is the } which closes int main(int argc, char *argv[]) { */
 
