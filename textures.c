@@ -24,6 +24,8 @@ GLXContext              glc;
 XWindowAttributes       gwa;
 XEvent                  xev;
 
+float x = 0;
+float y = 0;
 float num = 0;
 int width  = 0;
 int height = 0;
@@ -31,7 +33,7 @@ float size = .3;
 short BitsPerPixel = 0;
 int start_t,end_t;
 float total_t;
- GLuint text;
+GLuint text;
 GLuint text1;
 int t1,t2;
 #define BILLION  1000000000L;
@@ -50,8 +52,6 @@ GLuint loadTGA(char *filename) {
 	short w = 0;
 	short h = 0;
 	GLuint texture;
-	t1 = 0;
-	t2 = 60;
 
 	FILE *file = fopen(filename, "rb");
 	for(int i = 0; i < 12; i++) {
@@ -65,6 +65,8 @@ GLuint loadTGA(char *filename) {
 	fseek(file, 18, SEEK_SET);
 	fread(data, w*h*4, 1, file);
 	fclose(file);
+
+
 
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -86,11 +88,12 @@ GLuint loadTGA(char *filename) {
 }
 
 void DrawAQuad() {
-	 glRotatef(num,num,num,0.0);
+
+	 glRotatef(0,0,0,0.0);
+	 glTranslatef(x,y,0);
 
 	 glBindTexture(GL_TEXTURE_2D, text);
 	 glBegin(GL_QUADS);
-
 	  glTexCoord2f(0.0, 0.0); glVertex3f(-size, -size, -size);
 	  glTexCoord2f(1.0, 0.0); glVertex3f( size, -size, -size);
 	  glTexCoord2f(1.0, 1.0); glVertex3f( size,  size, -size);
@@ -144,7 +147,7 @@ void expose() {
 	 glLoadIdentity();
 	 glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
 
-	 num+=1;
+	// num+=1;
 	 glMatrixMode(GL_MODELVIEW);
 	 glLoadIdentity();
 	 gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
@@ -168,7 +171,23 @@ void expose() {
 	 glFlush();
 }
 
+void CheckKeyboard() {
+	if(XCheckWindowEvent(dpy,win,KeyPressMask,&xev)) {
+		char *key_string = XKeysymToString(XkbKeycodeToKeysym(dpy,xev.xkey.keycode,0,0));
+		if(strncmp(key_string, "Left", 4) == 0) {
+			x-=0.05;
+			num--;
+		} else if(strncmp(key_string,"Right", 5) == 0) {
+			x+=0.05;
+			num++;
+		} else if(strncmp(key_string,"Up", 2) == 0) {
+			y+=0.05;
+		} else if(strncmp(key_string,"Down",4) == 0) {
+			y-=0.05;
+		}
+	}
 
+}
 
 int main(int argc, char *argv[]) {
 
@@ -247,34 +266,12 @@ int main(int argc, char *argv[]) {
 		//if tstep has exceeded a 1/60 seconds render cube set tstep=0
 		if(tstep >= desiredTime) {
 			expose();
+			CheckKeyboard();
 			tstep = 0;
-		}
-		
-		
+		}	
 	}
 	 /* this closes while(1) { */
 } /* this is the } which closes int main(int argc, char *argv[]) { */
 
 
-
-
-
-/*
-	while(sysflags & SYS_FLAG_SYSTEM_RUNNING){
-		
-		timer_update(&timer);
-		
-		if(timer.tstep >= timer.min_tstep){
-
-			gfx.cube_theta += (float)timer.tstep * 20;
-			gfx.cube_theta = (float)fmod(gfx.cube_theta,360);
-			
-			sys_update(&sys);	
-			gfx_update(&gfx);
-
-			timer.tstep = 0;
-
-		}
-	}
-*/
 
