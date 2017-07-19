@@ -192,7 +192,6 @@ void CheckKeyboard() {
 }
 
 int main(int argc, char *argv[]) {
-
 	
 	 dpy = XOpenDisplay(NULL);
 	 
