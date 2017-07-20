@@ -19,7 +19,6 @@ int main(int argc,char *argv[]) {
 	int data_len;
 	char data[MAX_DATA];
 	
-	//create the server socket and listen on all interfaces
 	if((sock = socket(AF_INET,SOCK_STREAM,0)) == -1) {
 		perror("socket: ");
 		exit(1);
