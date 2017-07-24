@@ -1,4 +1,12 @@
-
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/socket.h>
+#include<sys/types.h>
+#include<netinet/in.h>
+#include<strings.h>
+#include<string.h>
+#include<arpa/inet.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -12,6 +20,10 @@
 #include<GL/glext.h>
 #include<GL/glu.h>
 #include <GL/glut.h>
+
+#define ERROR	-1
+#define BUFFER  1024
+char * peerID(int);
 
 Display                 *dpy;
 Window                  root;
@@ -36,6 +48,9 @@ float total_t;
 GLuint text;
 GLuint text1;
 int t1,t2;
+
+int sock;
+
 #define BILLION  1000000000L;
 
 GLfloat rotation_matrix[16];
@@ -147,7 +162,7 @@ void expose() {
 	 glLoadIdentity();
 	 glOrtho(-2.50*aspect_ratio, 2.50*aspect_ratio, -2.50, 2.50, 1., 100.);
 
-	 num+=1;
+	 //num+=1;
 	 glMatrixMode(GL_MODELVIEW);
 	 glLoadIdentity();
 	 gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
@@ -159,7 +174,6 @@ void expose() {
 	
 	//DRAWS OBJECT
 	 DrawAQuad();
-
 	glMatrixMode(GL_PROJECTION);
  	glLoadIdentity();
  	glOrtho(0, (float)gwa.width, 0, (float)gwa.height, -1., 1.);
@@ -183,6 +197,7 @@ void CheckKeyboard() {
 			x+=0.05;
 			num++;*/
 		} else if(strncmp(key_string,"Up", 2) == 0) {
+			send(sock,"up",2,0);
 			y+=0.05;
 		} else if(strncmp(key_string,"Down",4) == 0) {
 			y-=0.05;
@@ -192,87 +207,120 @@ void CheckKeyboard() {
 }
 
 int main(int argc, char *argv[]) {
+
+	struct sockaddr_in remote_server;
 	
-	 dpy = XOpenDisplay(NULL);
-	 
-	 if(dpy == NULL) {
-		printf("\n\tcannot connect to X server\n\n");
-		exit(0);
-	 }
-		
-	 root = DefaultRootWindow(dpy);
-
-	 vi = glXChooseVisual(dpy, 0, att);
-
-	 if(vi == NULL) {
-		printf("\n\tno appropriate visual found\n\n");
-		exit(0);
-	 } 
-	 else {
-		printf("\n\tvisual %p selected\n", (void *)vi->visualid); /* %p creates hexadecimal output like in glxinfo */
-	 }
-
-
-	 cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
-
-	 swa.colormap = cmap;
-	 swa.event_mask = ExposureMask | KeyPressMask;
-	 
-	 win = XCreateWindow(dpy, root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
-
-	 XMapWindow(dpy, win);
-	 XStoreName(dpy, win, "Window");
-	 
-	 glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
-
-	 glXMakeCurrent(dpy, win, glc);
-	 //glEnable(GL_DEPTH_TEST); 
-
-
-	 glGetFloatv(GL_MODELVIEW_MATRIX, rotation_matrix);
-	// clock_t ba = clock_gettime(CLOCK_REALTIME,&start);
-	 
-	 //so far he just got the frequency of each frame.	 
+	char input[BUFFER];
+	char output[BUFFER];
+	int len;
+	int idlen = 10;
+	char message[] = "send to the server";
+	char *id;
+	id = peerID(idlen);
 	
-	
-	 
-	text = loadTGA("minecraft1.tga");
-	text1 = loadTGA("grasstop.tga");
-
-
-	//query the time step initial
-	struct timespec ts;
-	//set a variable called old time and make that equal to the timestep
-	clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
-	uint64_t oldTime = ts.tv_nsec;
-	//we are going to render a frame when 1/60 seconed has passed
-	const float desiredTime = 1.0f / 60.0f;
-	float tstep = 0;
-	float tmpstep = 0;
-	
-	//main loop
-	
-	while(1) {
-		//set new time = new timestamp
-		clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
-		uint64_t newtime = ts.tv_nsec;
-		//tmpstep = newtime-oldtime 
-		tmpstep = newtime-oldTime;
-		//tstep+=tmpstep as long as tmpstep is less then 1
-		if(tstep <= 1.0f) {
-			tstep += tmpstep;
-		}
-		oldTime = newtime;
-		
-		//if tstep has exceeded a 1/60 seconds render cube set tstep=0
-		if(tstep >= desiredTime) {
-			expose();
-			CheckKeyboard();
-			tstep = 0;
-		}	
+	if((sock = socket(AF_INET, SOCK_STREAM, 0)) == ERROR) {
+		perror("error");
+		exit(-1);
 	}
+	remote_server.sin_family = AF_INET;
+	remote_server.sin_port = htons(atoi("8085"));
+	remote_server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	bzero(&remote_server.sin_zero, 8);
+	
+	//if we dont connect to the server close connection, else open window
+	if((connect(sock, (struct sockaddr *)&remote_server, sizeof(struct sockaddr_in))) == ERROR) {
+		perror("connect");
+		exit(-1);
+	} else {
+		
+		 dpy = XOpenDisplay(NULL);
+		 
+		 if(dpy == NULL) {
+			printf("\n\tcannot connect to X server\n\n");
+			exit(0);
+		 }
+		
+		 root = DefaultRootWindow(dpy);
+
+		 vi = glXChooseVisual(dpy, 0, att);
+
+		 if(vi == NULL) {
+			printf("\n\tno appropriate visual found\n\n");
+			exit(0);
+		 } 
+		 else {
+			printf("\n\tvisual %p selected\n", (void *)vi->visualid); /* %p creates hexadecimal output like in glxinfo */
+		 }
+
+		 cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
+
+		 swa.colormap = cmap;
+		 swa.event_mask = ExposureMask | KeyPressMask;
+		 
+		 win = XCreateWindow(dpy, root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+		 XMapWindow(dpy, win);
+		 XStoreName(dpy, win, "Window");
+		
+		 glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+		 glXMakeCurrent(dpy, win, glc);
+		 //glEnable(GL_DEPTH_TEST); 
+
+		 glGetFloatv(GL_MODELVIEW_MATRIX, rotation_matrix);
+		// clock_t ba = clock_gettime(CLOCK_REALTIME,&start);
+		 //so far he just got the frequency of each frame.	 
+		 
+		text = loadTGA("minecraft1.tga");
+		text1 = loadTGA("grasstop.tga");
+		
+		//main loop
+	
+		//query the time step initial
+		struct timespec ts;
+		//set a variable called old time and make that equal to the timestep
+		clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+		uint64_t oldTime = ts.tv_nsec;
+		//we are going to render a frame when 1/60 seconed has passed
+		const float desiredTime = 1.0f / 60.0f;
+		float tstep = 0;
+		float tmpstep = 0;
+		int err = 0;
+		while(1) {
+			//set new time = new timestamp
+			clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+			uint64_t newtime = ts.tv_nsec;
+			//tmpstep = newtime-oldtime 
+			tmpstep = newtime-oldTime;
+			//tstep+=tmpstep as long as tmpstep is less then 1
+			if(tstep <= 1.0f) {
+				tstep += tmpstep;
+			}
+			oldTime = newtime;
+		
+			//if tstep has exceeded a 1/60 seconds render cube set tstep=0
+			if(tstep >= desiredTime) {
+				expose();
+				CheckKeyboard();
+				tstep = 0;
+			}	
+		}
+	} close(sock);
+	
+
+		
+
+
 	 /* this closes while(1) { */
 } /* this is the } which closes int main(int argc, char *argv[]) { */
 
+char *peerID(int len) {
+  char nums[11] = "0123456789";
+  char *id = malloc(sizeof(char)*len+1);
+  for(int i = 0; i < len; i++) {
+     id[i] = nums[rand()%9];
+  }
+  id[len] = '\0';
+  return id;
+}
 
 
