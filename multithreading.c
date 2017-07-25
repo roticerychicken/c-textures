@@ -3,38 +3,52 @@
 #include <pthread.h>
 
 //sum computed by the background thread
-long long sum = 0;
+struct sum_runner_struct {
+	long long limit;
+	long long answer;
+};
 
 // Thread function to generate sum of 0 to N
 void* sum_runner(void* arg)
 {
-	long long *limit_ptr = (long long*) arg;
-	long long limit = *limit_ptr;
+	struct sum_runner_struct *arg_struct = (struct sum_runner_struct*) arg;
 
-	
-	for(long long i = 0; i < limit; i++) {
+	long long sum = 0;
+	for(long long i = 0; i <= arg_struct->limit; i++) {
 		sum += i; 
 	}
 	//sum is a global variable so other threads can access
+
+	arg_struct->answer = sum;
 
 	pthread_exit(0);
 	
 }
 int main(int argc, char **argv)
 {
+	
+	int num_args = argc - 1;
 
-        long long limit = atoll(argv[1]);
-    
         //Thread ID:
-        pthread_t tid;
+        pthread_t tids[num_args];
 	
         //create attributes
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
+        struct sum_runner_struct args[num_args]; 
 
-        pthread_create(&tid,&attr,sum_runner,&limit);
-    
+	for(int i = 0; i < num_args; i++) {
+		
+		args[i].limit = atoll(argv[i+1]);
+
+		pthread_attr_t attr;
+        	pthread_attr_init(&attr);
+        	pthread_create(&tids[i],&attr,sum_runner,&args[i]);
+    	}
+
 	//wait until thread is done
-	pthread_join(tid,NULL);
-	printf("Sum is %lld\n",sum);
+	for(int i = 0; i < num_args; i++) {
+		pthread_join(tids[i],NULL);
+		printf("Sum for thread %d is %lld\n",i,args[i].answer);
+	}
 }
+
+

@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <openssl/sha.h>
+#include <pthread.h>
 
 #define ERROR -1
 //amount of clients
@@ -16,14 +17,32 @@
 //size of the buffer
 #define MAX_DATA	1024
 
+struct sockaddr_in server;
+struct sockaddr_in client;
+int sock;
+
+int sockaddr_len = sizeof(struct sockaddr_in);
+int data_len;
+char data[MAX_DATA];
+
+void* run_server(void* arg)
+{
+	long new = (long)arg;
+	while(1) {
+		data_len = 1;	
+		while(data_len){
+			data_len = recv(new,data,MAX_DATA,0);
+			if(data_len) {
+				data[data_len] = '\0';
+				printf("sent msg: %s\n",data);
+			}	
+		}
+		close(new);
+	}
+	close(sock);
+}
 int main(int argc,char *argv[]) {
-	struct sockaddr_in server;
-	struct sockaddr_in client;
-	int sock;
-	int new;
-	int sockaddr_len = sizeof(struct sockaddr_in);
-	int data_len;
-	char data[MAX_DATA];
+	
 
 	if((sock = socket(AF_INET, SOCK_STREAM, 0)) == ERROR)
 	{
@@ -33,7 +52,7 @@ int main(int argc,char *argv[]) {
 
 
 	server.sin_family = AF_INET;
-    	server.sin_port = htons(8085);
+    	server.sin_port = htons(8080);
     	//inaddr instructs the kernal to listen on all interfaces
     	server.sin_addr.s_addr = INADDR_ANY;
     	bzero(&server.sin_zero,8);
@@ -47,26 +66,19 @@ int main(int argc,char *argv[]) {
         	perror("listen");
         	exit(-1);
    	}
-	
-	while(1) {
-		if ((new = accept(sock, (struct sockaddr *)&client, &sockaddr_len)) == ERROR) {
-			perror("accept");
-			exit(-1);
-		}
-		printf("New client connected from port no %d and IP %s\n",ntohs(client.sin_port), inet_ntoa(client.sin_addr));
+	int new;
+	if ((new = accept(sock, (struct sockaddr *)&client, &sockaddr_len)) == ERROR) {
+		perror("accept");
+		exit(-1);
+	} 
+	printf("New client connected from port no %d and IP %s\n",ntohs(client.sin_port), inet_ntoa(client.sin_addr));
 
-		data_len = 1;	
-		while(data_len){
-			data_len = recv(new,data,MAX_DATA,0);
-			if(data_len) {
-				data[data_len] = '\0';
-				printf("sent msg: %s\n",data);
-			}	
-		}
-		close(new);
-	}
-	close(sock);
+	pthread_t tid;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
 
+	pthread_create(&tid,&attr,run_server,&new);
+	pthread_join(tid,NULL);
 	return 0;
 }
 
