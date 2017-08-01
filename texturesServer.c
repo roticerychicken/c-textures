@@ -34,7 +34,7 @@ void* run_server(void* arg)
 			data_len = recv(new,data,MAX_DATA,0);
 			if(data_len) {
 				data[data_len] = '\0';
-				printf("sent msg: %s\n",data);
+				//printf("sent msg: %s\n",data);
 			}	
 		}
 		close(new);
@@ -42,7 +42,7 @@ void* run_server(void* arg)
 	close(sock);
 }
 int main(int argc,char *argv[]) {
-	
+	int new;
 
 	if((sock = socket(AF_INET, SOCK_STREAM, 0)) == ERROR)
 	{
@@ -52,7 +52,7 @@ int main(int argc,char *argv[]) {
 
 
 	server.sin_family = AF_INET;
-    	server.sin_port = htons(8080);
+    	server.sin_port = htons(8081);
     	//inaddr instructs the kernal to listen on all interfaces
     	server.sin_addr.s_addr = INADDR_ANY;
     	bzero(&server.sin_zero,8);
@@ -66,19 +66,25 @@ int main(int argc,char *argv[]) {
         	perror("listen");
         	exit(-1);
    	}
-	int new;
-	if ((new = accept(sock, (struct sockaddr *)&client, &sockaddr_len)) == ERROR) {
-		perror("accept");
-		exit(-1);
-	} 
-	printf("New client connected from port no %d and IP %s\n",ntohs(client.sin_port), inet_ntoa(client.sin_addr));
+	while(1) {
+		
+		if (!(new = accept(sock, (struct sockaddr *)&client, &sockaddr_len)) == ERROR) {
+			perror("accept");
+			pthread_t tid;
+			pthread_attr_t attr;
+			pthread_attr_init(&attr);
 
-	pthread_t tid;
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
+			pthread_create(&tid,&attr,run_server,&new);
+			pthread_join(tid,NULL);
+			exit(-1);
+		}
+			
+		printf("New client connected from port no %d and IP %s\n",ntohs(client.sin_port), inet_ntoa(client.sin_addr));
+	}
 
-	pthread_create(&tid,&attr,run_server,&new);
-	pthread_join(tid,NULL);
+		
+		
+	
 	return 0;
 }
 

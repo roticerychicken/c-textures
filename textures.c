@@ -197,7 +197,9 @@ void CheckKeyboard() {
 			x+=0.05;
 			num++;*/
 		} else if(strncmp(key_string,"Up", 2) == 0) {
-			send(sock,"up",2,0);
+			if(send(sock,"up",2,0)!= ERROR) {
+				perror("abcd");
+			}
 			y+=0.05;
 		} else if(strncmp(key_string,"Down",4) == 0) {
 			send(sock,"down",2,0);
@@ -224,7 +226,7 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 	remote_server.sin_family = AF_INET;
-	remote_server.sin_port = htons(atoi("8080"));
+	remote_server.sin_port = htons(atoi("8081"));
 	remote_server.sin_addr.s_addr = inet_addr("127.0.0.1");
 	bzero(&remote_server.sin_zero, 8);
 	
@@ -306,10 +308,6 @@ int main(int argc, char *argv[]) {
 			}	
 		}
 	} close(sock);
-	
-
-		
-
 
 	 /* this closes while(1) { */
 } /* this is the } which closes int main(int argc, char *argv[]) { */
