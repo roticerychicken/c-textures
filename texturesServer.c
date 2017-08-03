@@ -31,18 +31,30 @@ void* run_server(void* arg)
 		data_len = 1;	
 		while(data_len){
 			data_len = recv(new,data,MAX_DATA,0);
-			printf("sent msg: %s\n",data);
 			if(data_len >= 2) {
 				data[data_len] = '\0';
-				printf("sent msg: %s\n",data);
-			}	
+				printf("\nsent msg: %s\n",data);
+				write(new,data,20);
+			}
+			
 		}
 		close(new);
 	}
+	
+	/*
+	
+	 long clientFileDiscriptor=(long)arg;
+	 char str[20];
 
+	 read(clientFileDiscriptor,str,20);
+	 printf("\nnreading from client:%s\n",str);
+	 write(clientFileDiscriptor,str,20);
+	 printf("nechoing back to client\n");*/
+	// close(clientFileDiscriptor);
 
 
 }
+
 int main(int argc,char *argv[]) {
 
 	struct sockaddr_in server;

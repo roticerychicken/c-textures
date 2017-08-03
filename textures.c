@@ -48,7 +48,7 @@ float total_t;
 GLuint text;
 GLuint text1;
 int t1,t2;
-
+char str_ser[20],str_clnt[20];
 int sock;
 
 #define BILLION  1000000000L;
@@ -197,12 +197,22 @@ void CheckKeyboard() {
 			x+=0.05;
 			num++;*/
 		} else if(strncmp(key_string,"Up", 2) == 0) {
-			if(send(sock,"up",2,0)!= ERROR) {
-				perror("abcd");
-			}
-			y+=0.05;
+			//send(sock,"up",2,0);
+			write(sock,"up",10);
+			  //strncpy(str_clnt,"up\0",10);
+			  //write(sock,str_clnt,20);
+			  read(sock,str_ser,20);
+			  printf("String from Server: %s\n",str_ser);
+			  
+
+			  y+=0.05;
 		} else if(strncmp(key_string,"Down",4) == 0) {
-			send(sock,"down",2,0);
+			//send(sock,"down",2,0);
+			//strncpy(str_clnt,"down\0",10);
+			write(sock,"down",20);
+			read(sock,str_ser,20);
+			printf("String from Server: %s\n",str_ser);
+			
 			y-=0.05;
 		}
 	}
